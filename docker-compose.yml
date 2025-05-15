@@ -1,0 +1,52 @@
+services:
+  backend:
+    image: maven:3.8-openjdk-11
+    container_name: cdk-backend
+    working_dir: /app
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./backend/cdk-webapp-backend:/app
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/api/molecules/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    command: >
+      sh -c "
+        echo 'Installing dependencies...' &&
+        apt-get update && apt-get install -y curl &&
+        echo 'Building and starting the backend...' &&
+        mvn clean spring-boot:run
+      "
+    networks:
+      - cdk-network
+
+  frontend:
+    image: node:16
+    container_name: cdk-frontend
+    working_dir: /app
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./frontend/cdk-webapp-frontend:/app
+    command: >
+      sh -c "
+        echo 'Installing dependencies and starting the frontend...' &&
+        npm install &&
+        npm start
+      "
+    environment:
+      - CHOKIDAR_USEPOLLING=true
+      - WDS_SOCKET_PORT=3000
+      - REACT_APP_BACKEND_URL=http://cdk-backend:8080
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      - cdk-network
+
+networks:
+  cdk-network:
+    driver: bridge

@@ -1,0 +1,42 @@
+#!/bin/sh
+# Maven wrapper script
+
+# Find java
+if [ -n "$JAVA_HOME" ] ; then
+  if [ -x "$JAVA_HOME/jre/sh/java" ] ; then
+    JAVACMD="$JAVA_HOME/jre/sh/java"
+  else
+    JAVACMD="$JAVA_HOME/bin/java"
+  fi
+  if [ ! -x "$JAVACMD" ] ; then
+    echo "Error: JAVA_HOME is set to an invalid directory: $JAVA_HOME" >&2
+    exit 1
+  fi
+else
+  JAVACMD="java"
+  if ! command -v java >/dev/null 2>&1 ; then
+    echo "Error: JAVA_HOME is not set and no 'java' command could be found" >&2
+    exit 1
+  fi
+fi
+
+# Use docker if java is not available
+if ! command -v java >/dev/null 2>&1 ; then
+  if command -v docker >/dev/null 2>&1 ; then
+    echo "Java not found, using Docker instead..."
+    docker run --rm -v "$PWD":/app -w /app maven:3.8-openjdk-11 mvn "$@"
+    exit $?
+  else
+    echo "Error: Neither Java nor Docker is available" >&2
+    exit 1
+  fi
+fi
+
+# Find maven
+export MAVEN_PROJECTBASEDIR=${MAVEN_BASEDIR:-$(pwd)}
+MAVEN_OPTS="$MAVEN_OPTS"
+
+exec "$JAVACMD" \
+  $MAVEN_OPTS \
+  -classpath "$(dirname "$0")/maven-wrapper.jar" \
+  org.apache.maven.wrapper.MavenWrapperMain "$@"

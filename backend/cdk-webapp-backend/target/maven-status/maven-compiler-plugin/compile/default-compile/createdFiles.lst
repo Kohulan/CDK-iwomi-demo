@@ -1,0 +1,8 @@
+com/iwomi/cdkapp/model/Descriptor.class
+com/iwomi/cdkapp/service/impl/MoleculeServiceImpl.class
+com/iwomi/cdkapp/controller/MoleculeController.class
+com/iwomi/cdkapp/model/Molecule.class
+com/iwomi/cdkapp/util/CDKDescriptorLister.class
+com/iwomi/cdkapp/service/MoleculeService.class
+com/iwomi/cdkapp/config/WebConfig.class
+com/iwomi/cdkapp/App.class
