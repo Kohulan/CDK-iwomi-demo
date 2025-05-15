@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { Button, OverlayTrigger, Tooltip } from 'react-bootstrap';
 
 const sampleMolecules = [
   // Common medications

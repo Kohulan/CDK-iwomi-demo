@@ -8,6 +8,8 @@ import Footer from './components/Footer';
 import MoleculeCard from './components/MoleculeCard';
 import DescriptorsDisplay from './components/DescriptorsDisplay';
 import ParticlesBackground from './components/ParticlesBackground';
+import HeroSection from './components/HeroSection';
+import Molecule3DViewer from './components/Molecule3DViewer';
 
 // Get backend URL from environment variable or use API proxy for local development
 const API_BASE_URL = process.env.REACT_APP_BACKEND_URL || '/api';
@@ -46,6 +48,7 @@ function App() {
   const [descriptorCategory, setDescriptorCategory] = useState('All');
   const [descriptorSortBy, setDescriptorSortBy] = useState('name');
   const [descriptorSortDir, setDescriptorSortDir] = useState('asc');
+  const [showInputSection, setShowInputSection] = useState(false);
 
   // Check if API is available on component mount
   useEffect(() => {
@@ -68,6 +71,18 @@ function App() {
     const interval = setInterval(checkApiStatus, 10000);
     return () => clearInterval(interval);
   }, [apiAvailable]);
+
+  // Handle scroll to input section when hero CTA is clicked
+  const handleAnalyzeClick = () => {
+    setShowInputSection(true);
+    // Use setTimeout to ensure the state update has happened
+    setTimeout(() => {
+      const inputSection = document.querySelector('.sample-molecules');
+      if (inputSection) {
+        inputSection.scrollIntoView({ behavior: 'smooth' });
+      }
+    }, 100);
+  };
 
   // Function to fetch molecule data from API
   const fetchMolecule = async () => {
@@ -128,8 +143,14 @@ function App() {
     if (!molecule) return null;
     
     return (
-      <div className="mt-8">
+      <div className="mt-8 fade-in">
         <MoleculeCard molecule={molecule} />
+        
+        {/* Add the 3D Molecule Viewer component */}
+        <Molecule3DViewer 
+          molfile={molecule.molfile} 
+          smiles={molecule.smiles} 
+        />
         
         <div className="mt-8">
           <h3 className="text-lg font-semibold text-science-blue mb-4 flex items-center">
@@ -236,7 +257,12 @@ function App() {
         <div className="container mx-auto px-4">
           {activeTab === 'molecule' && (
             <>
-              <div className="mx-auto max-w-4xl">
+              {/* Add Hero Section when no molecule is selected */}
+              {!molecule && !showInputSection && (
+                <HeroSection onAnalyzeClick={handleAnalyzeClick} />
+              )}
+
+              <div className={`mx-auto max-w-4xl ${!molecule && !showInputSection ? 'hidden' : 'block fade-in'}`}>
                 <div className="mb-6 text-center">
                   <h1 className="text-3xl md:text-4xl font-display font-bold text-science-blue mb-2">
                     Molecular Structure Analyzer
@@ -339,6 +365,9 @@ function App() {
           )}
         </div>
       </main>
+      
+      {/* Add the background pattern for a more visually appealing look */}
+      <div className="bg-pattern"></div>
       
       <Footer />
     </div>

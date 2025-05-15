@@ -1,35 +1,35 @@
-import React, { useCallback } from 'react';
-import { useEffect, useState } from 'react';
-
-// This is a lightweight placeholder for the actual Particles component
-// We'll initialize the real particles library after it's installed via npm
+/**
+ * A simplified ParticlesBackground component that doesn't rely on external libraries
+ * and won't cause styling conflicts
+ */
 const ParticlesBackground = () => {
-  const [particlesLoaded, setParticlesLoaded] = useState(false);
-
-  useEffect(() => {
-    const loadParticles = async () => {
-      try {
-        // This would be replaced with actual initialization once dependencies are installed
-        setParticlesLoaded(true);
-      } catch (error) {
-        console.error("Failed to load particles:", error);
-      }
-    };
-
-    loadParticles();
-  }, []);
-
   return (
-    <div className="particles-container">
+    <div className="particles-container" style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', zIndex: -10 }}>
+      {/* Static background with gradient */}
       <div 
         style={{
-          position: 'absolute',
+          position: 'fixed',
           top: 0,
           left: 0,
           width: '100%',
           height: '100%',
-          zIndex: -1,
-          opacity: 0.3,
+          zIndex: -5,
+          background: 'linear-gradient(135deg, rgba(163, 217, 255, 0.05) 0%, rgba(201, 167, 235, 0.05) 100%)',
+        }}
+      />
+      
+      {/* Dots pattern background - made with pure CSS */}
+      <div 
+        style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          width: '100%',
+          height: '100%',
+          zIndex: -5,
+          opacity: 0.4,
+          backgroundImage: 'radial-gradient(circle at 25px 25px, rgba(163, 217, 255, 0.5) 2px, transparent 2px), radial-gradient(circle at 75px 75px, rgba(201, 167, 235, 0.3) 2px, transparent 2px)',
+          backgroundSize: '100px 100px',
           pointerEvents: 'none',
         }}
       />
