@@ -1,51 +1,21 @@
 import React, { useState, useEffect } from 'react';
-import { Card, Table, Form, InputGroup, Button, Spinner, Alert, Dropdown, Badge, Row, Col } from 'react-bootstrap';
 import axios from 'axios';
 
 // Get backend URL from environment variable or use API proxy for local development
 const API_BASE_URL = process.env.REACT_APP_BACKEND_URL || '/api';
 
-// Descriptor categories for grouping
+// Descriptor categories based on function and properties
 const DESCRIPTOR_CATEGORIES = {
-  "Constitutional": [
-    "AtomCount", "BondCount", "AromaticAtomsCount", "AromaticBondsCount", 
-    "RotatableBondsCount", "MolecularWeight", "FractionalCSP3", "HeavyAtomCount", 
-    "LargestChain", "LargestPiSystem", "LongestAliphaticChain", "AcidicGroupCount", 
-    "BasicGroupCount", "Weight"
-  ],
-  "Topological": [
-    "WienerNumbers", "ZagrebIndex", "TPSADescriptor", "PetitjeanNumber", 
-    "KappaShapeIndices", "EccentricConnectivity", "ChiPath", "ChiChain", 
-    "ChiPathCluster", "ChiCluster", "FragmentComplexity", "VAdjMa"
-  ],
-  "Electronic": [
-    "IPMolecular", "AtomHybridization", "BPol", "ALOGP", "APol",
-    "AutocorrelationCharge", "AutocorrelationPolarizability", "CarbonTypes"
-  ],
-  "Geometrical": [
-    "MomentOfInertia", "WHIM", "CPSA", "GravitationalIndex", "LengthOverBreadth",
-    "PetitjeanShape"
-  ],
-  "Drug-like": [
-    "XLogP", "HBondAcceptorCount", "HBondDonorCount", "RuleOfFive", "MannholdLogP",
-    "TPSA", "QED"
-  ],
-  "Fingerprints": [
-    "KierHallSmarts", "MDEDescriptor", "BCUTDescriptor", "FMF"
-  ],
-  "Others": []
-};
-
-// Function to determine descriptor category
-const getDescriptorCategory = (descriptor) => {
-  const id = descriptor.id.split('.').pop();
-  
-  for (const [category, descriptors] of Object.entries(DESCRIPTOR_CATEGORIES)) {
-    if (descriptors.some(desc => id.includes(desc))) {
-      return category;
-    }
-  }
-  return "Others";
+  'Constitutional': 'Basic physical and chemical properties',
+  'Topological': 'Connectivity and shape descriptors',
+  'Electronic': 'Electronic properties and charge distribution',
+  'Geometrical': '3D spatial arrangement and structural features',
+  'Fragment-based': 'Descriptors based on molecular fragments',
+  'Protein-related': 'Properties relevant to protein interactions',
+  'Quantum-chemical': 'Properties derived from quantum mechanics',
+  'Fingerprint-based': 'Structural patterns and features',
+  'QSAR': 'Quantitative Structure-Activity Relationships',
+  'Other': 'Miscellaneous descriptors'
 };
 
 function DescriptorsList() {
@@ -55,7 +25,7 @@ function DescriptorsList() {
   const [searchTerm, setSearchTerm] = useState('');
   const [sortField, setSortField] = useState('name');
   const [sortDirection, setSortDirection] = useState('asc');
-  const [descriptorCategory, setDescriptorCategory] = useState('All');
+  const [activeCategory, setActiveCategory] = useState('All');
 
   useEffect(() => {
     const fetchDescriptors = async () => {
@@ -92,28 +62,58 @@ function DescriptorsList() {
 
   const getSortIcon = (field) => {
     if (sortField !== field) return null;
-    return sortDirection === 'asc' ? '↑' : '↓';
+    return (
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="sort-icon" width="14" height="14" style={{ marginLeft: '4px' }}>
+        {sortDirection === 'asc' ? (
+          <path fillRule="evenodd" d="M11.47 7.72a.75.75 0 011.06 0l7.5 7.5a.75.75 0 11-1.06 1.06L12 9.31l-6.97 6.97a.75.75 0 01-1.06-1.06l7.5-7.5z" clipRule="evenodd" />
+        ) : (
+          <path fillRule="evenodd" d="M12.53 16.28a.75.75 0 01-1.06 0l-7.5-7.5a.75.75 0 011.06-1.06L12 14.69l6.97-6.97a.75.75 0 111.06 1.06l-7.5 7.5z" clipRule="evenodd" />
+        )}
+      </svg>
+    );
   };
 
+  // Function to determine category based on descriptor ID
+  const getCategoryForDescriptor = (descriptor) => {
+    const id = descriptor.id.toLowerCase();
+    
+    if (id.includes('atom') || id.includes('bond') || id.includes('weight') || id.includes('count')) {
+      return 'Constitutional';
+    } else if (id.includes('topo') || id.includes('index') || id.includes('path')) {
+      return 'Topological';
+    } else if (id.includes('charge') || id.includes('electro') || id.includes('polar')) {
+      return 'Electronic';
+    } else if (id.includes('3d') || id.includes('shape') || id.includes('volume')) {
+      return 'Geometrical';
+    } else if (id.includes('fragment') || id.includes('substructure')) {
+      return 'Fragment-based';
+    } else if (id.includes('finger') || id.includes('maccs') || id.includes('fp')) {
+      return 'Fingerprint-based';
+    } else if (id.includes('protein') || id.includes('enzyme') || id.includes('receptor')) {
+      return 'Protein-related';
+    } else if (id.includes('quantum') || id.includes('orbital') || id.includes('energy')) {
+      return 'Quantum-chemical';
+    } else if (id.includes('qsar') || id.includes('activity') || id.includes('property')) {
+      return 'QSAR';
+    }
+    
+    return 'Other';
+  };
+  
   // Group descriptors by category
   const descriptorsByCategory = {
     'All': descriptors
   };
-
+  
   descriptors.forEach(descriptor => {
-    const category = getDescriptorCategory(descriptor);
+    const category = getCategoryForDescriptor(descriptor);
     if (!descriptorsByCategory[category]) {
       descriptorsByCategory[category] = [];
     }
     descriptorsByCategory[category].push(descriptor);
   });
 
-  // Get the list of descriptors according to the selected category
-  const activeDescriptors = descriptorCategory === 'All'
-    ? descriptors
-    : descriptorsByCategory[descriptorCategory] || [];
-
-  const filteredAndSortedDescriptors = activeDescriptors
+  const filteredAndSortedDescriptors = (activeCategory === 'All' ? descriptors : descriptorsByCategory[activeCategory] || [])
     .filter(descriptor => 
       !searchTerm || 
       descriptor.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -132,125 +132,104 @@ function DescriptorsList() {
     });
 
   return (
-    <Card className="mt-4 descriptor-list-card">
-      <Card.Header as="h5">
-        <div className="d-flex justify-content-between align-items-center">
-          <span><i className="bi bi-list-check me-2"></i>Available CDK Descriptors (v2.11)</span>
-          <Badge bg="primary" pill className="px-3 py-2">
-            Total: {descriptors.length}
-          </Badge>
-        </div>
-      </Card.Header>
-      <Card.Body>
-        <div className="descriptor-info mb-3">
-          <p className="text-muted">
-            The Chemistry Development Kit (CDK) provides {descriptors.length} molecular descriptors
-            that can be used to characterize chemical structures. These descriptors are grouped into categories
-            based on the properties they measure:
-          </p>
-          <div className="descriptor-categories-list">
-            <Row>
-              <Col md={4}>
-                <ul className="small">
-                  <li><strong>Constitutional</strong>: Atom and bond counts, molecular weight</li>
-                  <li><strong>Topological</strong>: Molecular connectivity and shape</li>
-                  <li><strong>Electronic</strong>: Charge distribution, polarizability</li>
-                </ul>
-              </Col>
-              <Col md={4}>
-                <ul className="small">
-                  <li><strong>Geometrical</strong>: 3D shape and spatial arrangement</li>
-                  <li><strong>Drug-like</strong>: Properties relevant to pharmaceuticals</li>
-                  <li><strong>Fingerprints</strong>: Structural features and patterns</li>
-                </ul>
-              </Col>
-              <Col md={4}>
-                <ul className="small">
-                  <li><strong>QSAR</strong>: Quantitative Structure-Activity Relationships</li>
-                  <li><strong>Pharmacophore</strong>: Features related to biological activity</li>
-                </ul>
-              </Col>
-            </Row>
+    <div className="descriptors-list-card animate-fade-in">
+      <div className="section-header">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="icon">
+          <path d="M5.566 4.657A4.505 4.505 0 0 1 6.75 4.5h10.5c.41 0 .806.055 1.183.157A3 3 0 0 0 15.75 3h-7.5a3 3 0 0 0-2.684 1.657ZM2.25 12a3 3 0 0 1 3-3h13.5a3 3 0 0 1 3 3v6a3 3 0 0 1-3 3H5.25a3 3 0 0 1-3-3v-6ZM5.25 7.5c-.41 0-.806.055-1.184.157A3 3 0 0 1 6.75 6h10.5a3 3 0 0 1 2.683 1.657A4.505 4.505 0 0 0 18.75 7.5H5.25Z" />
+        </svg>
+        <h3>Available CDK Descriptors (v2.11)</h3>
+      </div>
+      
+      <div className="descriptors-info">
+        <p>
+          The Chemistry Development Kit (CDK) provides {descriptors.length} molecular descriptors
+          that can be used to characterize chemical structures. These descriptors are grouped into categories
+          based on the properties they measure:
+        </p>
+        
+        <ul className="categories-list">
+          {Object.entries(DESCRIPTOR_CATEGORIES).map(([category, description]) => (
+            <li key={category} className="category-list-item">
+              <strong>{category}</strong>: {description}
+            </li>
+          ))}
+        </ul>
+      </div>
+      
+      <div style={{ padding: '16px' }}>
+        <div className="descriptors-filter">
+          <div className="filter-group search-group">
+            <input
+              type="text"
+              className="search-control"
+              placeholder="Search descriptors..."
+              value={searchTerm}
+              onChange={handleSearchChange}
+            />
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="search-icon">
+              <path fillRule="evenodd" d="M10.5 3.75a6.75 6.75 0 100 13.5 6.75 6.75 0 000-13.5zM2.25 10.5a8.25 8.25 0 1114.59 5.28l4.69 4.69a.75.75 0 11-1.06 1.06l-4.69-4.69A8.25 8.25 0 012.25 10.5z" clipRule="evenodd" />
+            </svg>
+          </div>
+          
+          <div className="filter-group">
+            <label>Category:</label>
+            <select
+              value={activeCategory}
+              onChange={(e) => setActiveCategory(e.target.value)}
+              className="select-control"
+            >
+              <option value="All">All Categories ({descriptors.length})</option>
+              {Object.keys(descriptorsByCategory)
+                .filter(cat => cat !== 'All')
+                .sort()
+                .map(category => (
+                  <option key={category} value={category}>
+                    {category} ({descriptorsByCategory[category].length})
+                  </option>
+                ))
+              }
+            </select>
           </div>
         </div>
-        
-        <Row className="mb-3">
-          <Col md={8}>
-            <InputGroup>
-              <Form.Control
-                type="text"
-                placeholder="Search descriptors..."
-                value={searchTerm}
-                onChange={handleSearchChange}
-              />
-              {searchTerm && (
-                <Button 
-                  variant="outline-secondary" 
-                  onClick={() => setSearchTerm('')}
-                >
-                  Clear
-                </Button>
-              )}
-            </InputGroup>
-          </Col>
-          <Col md={4} className="d-flex align-items-center justify-content-end">
-            <Dropdown>
-              <Dropdown.Toggle variant="outline-secondary">
-                Category: {descriptorCategory} <Badge bg="info" pill>{filteredAndSortedDescriptors.length}</Badge>
-              </Dropdown.Toggle>
-              <Dropdown.Menu>
-                <Dropdown.Item onClick={() => setDescriptorCategory('All')}>
-                  All <Badge bg={descriptorCategory === 'All' ? 'primary' : 'secondary'} pill>{descriptors.length}</Badge>
-                </Dropdown.Item>
-                <Dropdown.Divider />
-                {Object.keys(descriptorsByCategory)
-                  .filter(cat => cat !== 'All')
-                  .sort()
-                  .map(category => (
-                    <Dropdown.Item 
-                      key={category}
-                      onClick={() => setDescriptorCategory(category)}
-                    >
-                      {category} <Badge bg={descriptorCategory === category ? 'primary' : 'secondary'} pill>{descriptorsByCategory[category].length}</Badge>
-                    </Dropdown.Item>
-                  ))
-                }
-              </Dropdown.Menu>
-            </Dropdown>
-          </Col>
-        </Row>
 
         {loading ? (
-          <div className="text-center p-3">
-            <Spinner animation="border" role="status">
-              <span className="visually-hidden">Loading...</span>
-            </Spinner>
-            <p className="mt-2">Loading descriptors...</p>
+          <div className="loading-container" style={{ textAlign: 'center', padding: '40px' }}>
+            <div className="loading-spinner" style={{ width: '40px', height: '40px', margin: '0 auto 16px' }}></div>
+            <p>Loading descriptors...</p>
           </div>
         ) : error ? (
-          <Alert variant="danger">{error}</Alert>
+          <div className="error-message" style={{ margin: '20px 0' }}>
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="icon">
+              <path fillRule="evenodd" d="M12 2.25c-5.385 0-9.75 4.365-9.75 9.75s4.365 9.75 9.75 9.75 9.75-4.365 9.75-9.75S17.385 2.25 12 2.25zm-1.72 6.97a.75.75 0 10-1.06 1.06L10.94 12l-1.72 1.72a.75.75 0 101.06 1.06L12 13.06l1.72 1.72a.75.75 0 101.06-1.06L13.06 12l1.72-1.72a.75.75 0 10-1.06-1.06L12 10.94l-1.72-1.72z" clipRule="evenodd" />
+            </svg>
+            <p>{error}</p>
+          </div>
         ) : (
           <>
-            <p className="text-muted mb-2">
+            <p className="form-hint" style={{ margin: '20px 0' }}>
               Found {filteredAndSortedDescriptors.length} descriptors
               {searchTerm && ` matching "${searchTerm}"`}
-              {descriptorCategory !== 'All' && ` in category "${descriptorCategory}"`}
+              {activeCategory !== 'All' && ` in category "${activeCategory}"`}
             </p>
 
-            <Table striped bordered hover responsive>
+            <table className="descriptors-table" style={{ marginTop: '16px' }}>
               <thead>
                 <tr>
                   <th 
                     style={{cursor: 'pointer'}} 
                     onClick={() => handleSort('name')}
                   >
-                    Name {getSortIcon('name')}
+                    <div style={{ display: 'flex', alignItems: 'center' }}>
+                      Name {getSortIcon('name')}
+                    </div>
                   </th>
                   <th 
                     style={{cursor: 'pointer'}} 
                     onClick={() => handleSort('id')}
                   >
-                    Descriptor ID {getSortIcon('id')}
+                    <div style={{ display: 'flex', alignItems: 'center' }}>
+                      Descriptor ID {getSortIcon('id')}
+                    </div>
                   </th>
                   <th>Description</th>
                 </tr>
@@ -259,51 +238,61 @@ function DescriptorsList() {
                 {filteredAndSortedDescriptors.map((descriptor, index) => (
                   <tr key={index}>
                     <td>
-                      <strong>{descriptor.name}</strong>
-                      <div className="small text-muted mt-1">
-                        <span className="me-2">
-                          <Badge 
-                            bg={getDescriptorCategory(descriptor) === "Others" ? "secondary" : "primary"} 
-                            className="category-badge"
-                          >
-                            {getDescriptorCategory(descriptor)}
-                          </Badge>
-                        </span>
+                      <div className="descriptor-name">{descriptor.name}</div>
+                      <div className="category-badge" style={{ 
+                        display: 'inline-block',
+                        padding: '2px 8px',
+                        borderRadius: '9999px',
+                        fontSize: '0.7rem',
+                        backgroundColor: 'rgba(0, 97, 171, 0.1)',
+                        color: 'var(--color-primary)',
+                        marginTop: '4px'
+                      }}>
+                        {getCategoryForDescriptor(descriptor)}
                       </div>
                     </td>
                     <td>
-                      <code>{descriptor.id.split('.').pop()}</code>
-                      <div className="small text-muted mt-1">
-                        <em>{descriptor.id}</em>
+                      <div className="descriptor-id" style={{ marginTop: 0 }}>{descriptor.id.split('.').pop()}</div>
+                      <div style={{ 
+                        fontSize: '0.75rem',
+                        color: 'var(--color-gray-500)',
+                        marginTop: '4px',
+                        fontStyle: 'italic'
+                      }}>
+                        {descriptor.id}
                       </div>
                     </td>
                     <td>
-                      {descriptor.description !== descriptor.id 
-                        ? descriptor.description 
-                        : "Molecular descriptor from CDK"}
+                      <div className="descriptor-description">
+                        {descriptor.description !== descriptor.id 
+                          ? descriptor.description 
+                          : "Molecular descriptor from CDK"}
+                      </div>
                       
                       {descriptor.id.includes("Count") && (
-                        <div className="small text-info mt-1">
-                          <i className="bi bi-info-circle me-1"></i>
+                        <div style={{ 
+                          fontSize: '0.75rem',
+                          color: 'var(--color-info)',
+                          marginTop: '4px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '4px'
+                        }}>
+                          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" style={{ width: '12px', height: '12px' }}>
+                            <path fillRule="evenodd" d="M2.25 12c0-5.385 4.365-9.75 9.75-9.75s9.75 4.365 9.75 9.75-4.365 9.75-9.75 9.75S2.25 17.385 2.25 12zm8.706-1.442c1.146-.573 2.437.463 2.126 1.706l-.709 2.836.042-.02a.75.75 0 01.67 1.34l-.04.022c-1.147.573-2.438-.463-2.127-1.706l.71-2.836-.042.02a.75.75 0 11-.671-1.34l.041-.022zM12 9a.75.75 0 100-1.5.75.75 0 000 1.5z" clipRule="evenodd" />
+                          </svg>
                           Returns a count of specific molecular features
-                        </div>
-                      )}
-                      
-                      {descriptor.id.includes("BCUT") && (
-                        <div className="small text-info mt-1">
-                          <i className="bi bi-info-circle me-1"></i>
-                          BCUT descriptors use eigenvalues of modified adjacency matrices
                         </div>
                       )}
                     </td>
                   </tr>
                 ))}
               </tbody>
-            </Table>
+            </table>
           </>
         )}
-      </Card.Body>
-    </Card>
+      </div>
+    </div>
   );
 }
 

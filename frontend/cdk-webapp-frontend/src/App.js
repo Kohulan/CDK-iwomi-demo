@@ -7,7 +7,6 @@ import Header from './components/Header';
 import Footer from './components/Footer';
 import MoleculeCard from './components/MoleculeCard';
 import DescriptorsDisplay from './components/DescriptorsDisplay';
-import ParticlesBackground from './components/ParticlesBackground';
 import HeroSection from './components/HeroSection';
 import Molecule3DViewer from './components/Molecule3DViewer';
 
@@ -56,9 +55,6 @@ function App() {
       try {
         // Try to ping the backend API
         await axios.get(`${API_BASE_URL}/molecules/health`, { timeout: 3000 });
-        if (!apiAvailable) {
-          console.log('Backend API is now available');
-        }
         setApiAvailable(true);
       } catch (err) {
         console.error('API health check failed:', err);
@@ -70,14 +66,14 @@ function App() {
     // Periodically check API availability
     const interval = setInterval(checkApiStatus, 10000);
     return () => clearInterval(interval);
-  }, [apiAvailable]);
+  }, []);
 
   // Handle scroll to input section when hero CTA is clicked
   const handleAnalyzeClick = () => {
     setShowInputSection(true);
     // Use setTimeout to ensure the state update has happened
     setTimeout(() => {
-      const inputSection = document.querySelector('.sample-molecules');
+      const inputSection = document.querySelector('.molecule-input-section');
       if (inputSection) {
         inputSection.scrollIntoView({ behavior: 'smooth' });
       }
@@ -85,14 +81,15 @@ function App() {
   };
 
   // Function to fetch molecule data from API
-  const fetchMolecule = async () => {
-    if (!smiles.trim()) return;
+  const fetchMolecule = async (smilesInput) => {
+    const smilesString = smilesInput || smiles;
+    if (!smilesString.trim()) return;
     
     try {
       setLoading(true);
       setError('');
       
-      const response = await axios.post(`${API_BASE_URL}/molecules/parse`, { smiles });
+      const response = await axios.post(`${API_BASE_URL}/molecules/parse`, { smiles: smilesString });
       
       // Add category information to each descriptor for better organization
       if (response.data && response.data.descriptors) {
@@ -103,16 +100,16 @@ function App() {
       }
       
       setMolecule(response.data);
+      setLoading(false);
     } catch (err) {
       console.error('Error analyzing molecule:', err);
       setError('Failed to analyze molecule. Please check your SMILES notation and try again.');
-    } finally {
       setLoading(false);
     }
   };
 
   const handleSubmit = (e) => {
-    e.preventDefault();
+    e?.preventDefault();
     if (!smiles.trim()) {
       setError('Please enter a SMILES string');
       return;
@@ -131,243 +128,194 @@ function App() {
   const handleSampleMoleculeSelect = (smilesNotation) => {
     setSmiles(smilesNotation);
     setError('');
-    
-    // Use setTimeout to ensure the state update happens before fetchMolecule is called
-    setTimeout(() => {
-      fetchMolecule();
-    }, 0);
-  };
-
-  // Function to render molecule details
-  const renderMoleculeDetails = () => {
-    if (!molecule) return null;
-    
-    return (
-      <div className="mt-8 fade-in">
-        <MoleculeCard molecule={molecule} />
-        
-        {/* Add the 3D Molecule Viewer component */}
-        <Molecule3DViewer 
-          molfile={molecule.molfile} 
-          smiles={molecule.smiles} 
-        />
-        
-        <div className="mt-8">
-          <h3 className="text-lg font-semibold text-science-blue mb-4 flex items-center">
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2 text-pastel-purple" viewBox="0 0 20 20" fill="currentColor">
-              <path d="M2 10a8 8 0 018-8v8h8a8 8 0 11-16 0z" />
-              <path d="M12 2.252A8.014 8.014 0 0117.748 8H12V2.252z" />
-            </svg>
-            Molecular Descriptors
-          </h3>
-          
-          <div className="bg-white/80 backdrop-blur-sm rounded-xl shadow-glass p-4">
-            <div className="mb-4 flex flex-wrap gap-3">
-              {/* Category filter */}
-              <div className="relative inline-block">
-                <select
-                  className="appearance-none block px-3 py-2 border border-gray-300 rounded-md bg-white shadow-sm focus:outline-none focus:ring-pastel-blue focus:border-pastel-blue text-sm"
-                  value={descriptorCategory}
-                  onChange={(e) => setDescriptorCategory(e.target.value)}
-                >
-                  <option value="All">All Categories</option>
-                  {Object.keys(DESCRIPTOR_CATEGORIES).map(category => (
-                    <option key={category} value={category}>{category}</option>
-                  ))}
-                </select>                  <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
-                    <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
-                    </svg>
-                  </div>
-              </div>
-              
-              {/* Search input */}
-              <div className="relative flex-grow max-w-md">
-                <input
-                  type="text"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white shadow-sm focus:outline-none focus:ring-pastel-blue focus:border-pastel-blue text-sm"
-                  placeholder="Search descriptors..."
-                  value={descriptorSearchTerm}
-                  onChange={(e) => setDescriptorSearchTerm(e.target.value)}
-                />
-                <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none text-gray-400">
-                  <svg className="h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                    <path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clipRule="evenodd" />
-                  </svg>
-                </div>
-              </div>
-              
-              {/* Sort controls */}
-              <div className="flex items-center">
-                <span className="text-sm text-gray-500 mr-2">Sort:</span>
-                <div className="relative inline-block">
-                  <select
-                    className="appearance-none block px-3 py-2 border border-gray-300 rounded-md bg-white shadow-sm focus:outline-none focus:ring-pastel-blue focus:border-pastel-blue text-sm"
-                    value={descriptorSortBy}
-                    onChange={(e) => setDescriptorSortBy(e.target.value)}
-                  >
-                    <option value="name">Name</option>
-                    <option value="value">Value</option>
-                    <option value="category">Category</option>
-                  </select>
-                  <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
-                    <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
-                    </svg>
-                  </div>
-                </div>
-                
-                <button
-                  className="ml-2 p-2 rounded-md border border-gray-300 bg-white shadow-sm hover:bg-gray-50"
-                  onClick={() => setDescriptorSortDir(prev => prev === 'asc' ? 'desc' : 'asc')}
-                >
-                  {descriptorSortDir === 'asc' ? (
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-gray-500" viewBox="0 0 20 20" fill="currentColor">
-                      <path fillRule="evenodd" d="M14.707 12.707a1 1 0 01-1.414 0L10 9.414l-3.293 3.293a1 1 0 01-1.414-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 010 1.414z" clipRule="evenodd" />
-                    </svg>
-                  ) : (
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-gray-500" viewBox="0 0 20 20" fill="currentColor">
-                      <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
-                    </svg>
-                  )}
-                </button>
-              </div>
-            </div>
-            
-            <DescriptorsDisplay 
-              descriptors={molecule.descriptors}
-              category={descriptorCategory}
-              searchTerm={descriptorSearchTerm}
-              sortBy={descriptorSortBy}
-              sortDir={descriptorSortDir}
-            />
-          </div>
-        </div>
-      </div>
-    );
+    fetchMolecule(smilesNotation);
   };
 
   return (
-    <div className="App min-h-screen flex flex-col custom-scrollbar">
-      <ParticlesBackground />
+    <div className="app-container">
+      {/* Background elements */}
+      <div className="bg-gradient"></div>
+      <div className="bg-pattern"></div>
       
       <Header activeTab={activeTab} setActiveTab={setActiveTab} />
       
-      <main className="flex-grow py-8">
-        <div className="container mx-auto px-4">
-          {activeTab === 'molecule' && (
-            <>
-              {/* Add Hero Section when no molecule is selected */}
-              {!molecule && !showInputSection && (
-                <HeroSection onAnalyzeClick={handleAnalyzeClick} />
-              )}
-
-              <div className={`mx-auto max-w-4xl ${!molecule && !showInputSection ? 'hidden' : 'block fade-in'}`}>
-                <div className="mb-6 text-center">
-                  <h1 className="text-3xl md:text-4xl font-display font-bold text-science-blue mb-2">
-                    Molecular Structure Analyzer
-                  </h1>
-                  <p className="text-gray-600 max-w-2xl mx-auto">
-                    Analyze molecules and calculate chemical descriptors using the Chemistry Development Kit (CDK). Enter a SMILES notation or select a sample molecule below.
-                  </p>
+      <main className="main-content">
+        {activeTab === 'molecule' && (
+          <div className="molecule-tab-content">
+            {!molecule && !showInputSection ? (
+              <HeroSection onAnalyzeClick={handleAnalyzeClick} />
+            ) : (
+              <>
+                <div className="page-header animate-fade-in">
+                  <h1>Molecular Structure Analyzer</h1>
+                  <p>Analyze molecules and calculate chemical descriptors using the Chemistry Development Kit (CDK)</p>
                 </div>
                 
-                <SampleMolecules onSelectMolecule={handleSampleMoleculeSelect} />
-                
-                <div className="rounded-xl bg-white/80 backdrop-blur-sm p-6 shadow-glass">
-                  <h2 className="text-xl font-semibold text-science-blue mb-4 flex items-center">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2 text-pastel-purple" viewBox="0 0 20 20" fill="currentColor">
-                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clipRule="evenodd" />
-                    </svg>
-                    Enter SMILES Notation
-                  </h2>
+                <div className="molecule-input-section animate-fade-in-up">
+                  <SampleMolecules onSelectMolecule={handleSampleMoleculeSelect} />
                   
-                  {!apiAvailable && (
-                    <div className="mb-4 bg-yellow-50 border-l-4 border-yellow-400 p-4 rounded-md">
-                      <div className="flex">
-                        <div className="flex-shrink-0">
-                          <svg className="h-5 w-5 text-yellow-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                            <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-                          </svg>
-                        </div>
-                        <div className="ml-3">
-                          <p className="text-sm text-yellow-700">
-                            Backend API is not available. Please ensure the CDK backend service is running.
-                          </p>
-                        </div>
+                  <div className="smiles-input-card">
+                    <div className="card-header">
+                      <div className="card-header-icon">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="icon">
+                          <path d="M12.378 1.602a.75.75 0 0 0-.756 0L3 6.632l9 5.25 9-5.25-8.622-5.03ZM21.75 7.93l-9 5.25v9l8.628-5.032a.75.75 0 0 0 .372-.648V7.93ZM11.25 22.18v-9l-9-5.25v8.57a.75.75 0 0 0 .372.648l8.628 5.033Z" />
+                        </svg>
                       </div>
-                    </div>
-                  )}
-                  
-                  <form onSubmit={handleSubmit}>
-                    <div className="mb-4">
-                      <label htmlFor="smiles" className="block text-sm font-medium text-gray-700 mb-1">
-                        SMILES Notation
-                      </label>
-                      <textarea
-                        id="smiles"
-                        rows={3}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-pastel-blue focus:border-pastel-blue"
-                        placeholder="Enter SMILES notation (e.g., CC(=O)OC1=CC=CC=C1C(=O)O for Aspirin)"
-                        value={smiles}
-                        onChange={handleSmilesChange}
-                        disabled={loading || !apiAvailable}
-                      ></textarea>
-                      <p className="mt-1 text-xs text-gray-500">
-                        SMILES (Simplified Molecular-Input Line-Entry System) is a specification for describing the structure of chemical molecules.
-                      </p>
+                      <h2>Enter SMILES Notation</h2>
                     </div>
                     
-                    <div className="flex justify-center">
-                      <button 
-                        type="submit" 
-                        className={`px-6 py-2.5 rounded-lg font-medium transition-all ${
-                          loading || !apiAvailable
-                            ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                            : 'bg-science-gradient text-white shadow-md hover:shadow-lg transform hover:-translate-y-0.5'
-                        }`}
-                        disabled={loading || !apiAvailable}
-                      >
-                        {loading ? (
-                          <div className="flex items-center">
-                            <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                            </svg>
-                            <span>Processing...</span>
-                          </div>
-                        ) : (
-                          'Analyze Molecule'
-                        )}
-                      </button>
-                    </div>
-                  </form>
-                  
-                  {error && (
-                    <div className="mt-4 bg-red-50 border-l-4 border-red-400 p-4 rounded-lg">
-                      <div className="flex">
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    {!apiAvailable && (
+                      <div className="api-warning">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="icon">
+                          <path fillRule="evenodd" d="M9.401 3.003c1.155-2 4.043-2 5.197 0l7.355 12.748c1.154 2-.29 4.5-2.599 4.5H4.645c-2.309 0-3.752-2.5-2.598-4.5L9.4 3.003ZM12 8.25a.75.75 0 0 1 .75.75v3.75a.75.75 0 0 1-1.5 0V9a.75.75 0 0 1 .75-.75Zm0 8.25a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5Z" clipRule="evenodd" />
                         </svg>
-                        <p className="ml-3 text-sm text-red-700">{error}</p>
+                        <p>Backend API is not available. Please ensure the CDK backend service is running.</p>
                       </div>
-                    </div>
-                  )}
+                    )}
+                    
+                    <form onSubmit={handleSubmit} className="smiles-form">
+                      <div className="form-group">
+                        <label htmlFor="smiles">SMILES Notation</label>
+                        <textarea
+                          id="smiles"
+                          rows={3}
+                          className="form-control"
+                          placeholder="Enter SMILES notation (e.g., CC(=O)OC1=CC=CC=C1C(=O)O for Aspirin)"
+                          value={smiles}
+                          onChange={handleSmilesChange}
+                          disabled={loading || !apiAvailable}
+                        ></textarea>
+                        <p className="form-hint">
+                          SMILES (Simplified Molecular-Input Line-Entry System) is a specification for describing the structure of chemical molecules.
+                        </p>
+                      </div>
+                      
+                      <div className="form-actions">
+                        <button 
+                          type="submit" 
+                          className={`btn btn-primary ${loading || !apiAvailable ? 'btn-disabled' : ''}`}
+                          disabled={loading || !apiAvailable}
+                        >
+                          {loading ? (
+                            <>
+                              <span className="loading-spinner"></span>
+                              <span>Processing...</span>
+                            </>
+                          ) : (
+                            'Analyze Molecule'
+                          )}
+                        </button>
+                      </div>
+                    </form>
+                    
+                    {error && (
+                      <div className="error-message">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="icon">
+                          <path fillRule="evenodd" d="M2.25 12c0-5.385 4.365-9.75 9.75-9.75s9.75 4.365 9.75 9.75-4.365 9.75-9.75 9.75S2.25 17.385 2.25 12zM12 8.25a.75.75 0 01.75.75v3.75a.75.75 0 01-1.5 0V9a.75.75 0 01.75-.75zm0 8.25a.75.75 0 100-1.5.75.75 0 000 1.5z" clipRule="evenodd" />
+                        </svg>
+                        <p>{error}</p>
+                      </div>
+                    )}
+                  </div>
                 </div>
-              </div>
-              
-              {renderMoleculeDetails()}
-            </>
-          )}
-          
-          {activeTab === 'descriptors' && (
+                
+                {molecule && (
+                  <div className="molecule-results animate-fade-in-up">
+                    <MoleculeCard molecule={molecule} />
+                    
+                    <Molecule3DViewer 
+                      molfile={molecule.molfile} 
+                      smiles={molecule.smiles} 
+                    />
+                    
+                    <div className="molecular-descriptors">
+                      <div className="section-header">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="icon">
+                          <path fillRule="evenodd" d="M2.25 13.5a8.25 8.25 0 018.25-8.25.75.75 0 01.75.75v6.75H18a.75.75 0 01.75.75 8.25 8.25 0 01-16.5 0z" clipRule="evenodd" />
+                          <path fillRule="evenodd" d="M12.75 3a.75.75 0 01.75-.75 8.25 8.25 0 018.25 8.25.75.75 0 01-.75.75h-7.5a.75.75 0 01-.75-.75V3z" clipRule="evenodd" />
+                        </svg>
+                        <h3>Molecular Descriptors</h3>
+                      </div>
+                      
+                      <div className="descriptors-filter">
+                        <div className="filter-group">
+                          <label>Category:</label>
+                          <select
+                            value={descriptorCategory}
+                            onChange={(e) => setDescriptorCategory(e.target.value)}
+                            className="select-control"
+                          >
+                            <option value="All">All Categories</option>
+                            {Object.keys(DESCRIPTOR_CATEGORIES).map(category => (
+                              <option key={category} value={category}>{category}</option>
+                            ))}
+                          </select>
+                        </div>
+                        
+                        <div className="filter-group search-group">
+                          <input
+                            type="text"
+                            className="search-control"
+                            placeholder="Search descriptors..."
+                            value={descriptorSearchTerm}
+                            onChange={(e) => setDescriptorSearchTerm(e.target.value)}
+                          />
+                          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="search-icon">
+                            <path fillRule="evenodd" d="M10.5 3.75a6.75 6.75 0 100 13.5 6.75 6.75 0 000-13.5zM2.25 10.5a8.25 8.25 0 1114.59 5.28l4.69 4.69a.75.75 0 11-1.06 1.06l-4.69-4.69A8.25 8.25 0 012.25 10.5z" clipRule="evenodd" />
+                          </svg>
+                        </div>
+                        
+                        <div className="filter-group">
+                          <label>Sort by:</label>
+                          <select
+                            value={descriptorSortBy}
+                            onChange={(e) => setDescriptorSortBy(e.target.value)}
+                            className="select-control"
+                          >
+                            <option value="name">Name</option>
+                            <option value="value">Value</option>
+                            <option value="category">Category</option>
+                          </select>
+                          
+                          <button
+                            className="sort-direction-btn"
+                            onClick={() => setDescriptorSortDir(prev => prev === 'asc' ? 'desc' : 'asc')}
+                            title={descriptorSortDir === 'asc' ? 'Ascending' : 'Descending'}
+                          >
+                            {descriptorSortDir === 'asc' ? (
+                              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="icon">
+                                <path fillRule="evenodd" d="M11.47 7.72a.75.75 0 011.06 0l7.5 7.5a.75.75 0 11-1.06 1.06L12 9.31l-6.97 6.97a.75.75 0 01-1.06-1.06l7.5-7.5z" clipRule="evenodd" />
+                              </svg>
+                            ) : (
+                              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="icon">
+                                <path fillRule="evenodd" d="M12.53 16.28a.75.75 0 01-1.06 0l-7.5-7.5a.75.75 0 011.06-1.06L12 14.69l6.97-6.97a.75.75 0 111.06 1.06l-7.5 7.5z" clipRule="evenodd" />
+                              </svg>
+                            )}
+                          </button>
+                        </div>
+                      </div>
+                      
+                      <DescriptorsDisplay 
+                        descriptors={molecule.descriptors}
+                        category={descriptorCategory}
+                        searchTerm={descriptorSearchTerm}
+                        sortBy={descriptorSortBy}
+                        sortDir={descriptorSortDir}
+                      />
+                    </div>
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+        )}
+        
+        {activeTab === 'descriptors' && (
+          <div className="descriptors-tab-content animate-fade-in">
             <DescriptorsList />
-          )}
-        </div>
+          </div>
+        )}
       </main>
-      
-      {/* Add the background pattern for a more visually appealing look */}
-      <div className="bg-pattern"></div>
       
       <Footer />
     </div>

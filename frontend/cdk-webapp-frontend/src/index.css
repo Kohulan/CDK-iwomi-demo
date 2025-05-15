@@ -1,13 +1,13 @@
-/* The three Tailwind directives below need to be removed from regular CSS files 
-   and should be placed in a separate file that's processed by PostCSS */
-/* 
-@import 'tailwindcss/base';
-@import 'tailwindcss/components';
-@import 'tailwindcss/utilities';
-*/
+/* Create a new file: src/index.css */
 
-/* Use standard CSS @import for fonts */
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@100..900&family=JetBrains+Mono:wght@100..800&family=Quicksand:wght@300..700&display=swap');
+
+/* Reset and base styles */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
 
 body {
   margin: 0;
@@ -28,6 +28,7 @@ code, .monospace {
   font-family: 'Quicksand', sans-serif;
 }
 
+/* Custom scrollbar */
 .custom-scrollbar {
   scrollbar-width: thin;
   scrollbar-color: rgba(163, 217, 255, 0.5) #f8fafc;

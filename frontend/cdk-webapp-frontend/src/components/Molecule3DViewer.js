@@ -1,93 +1,43 @@
-import React from 'react';
+import React, { useState } from 'react';
 
-/**
- * A simplified placeholder for the 3D Molecule Viewer
- * Uses only inline styles to prevent CSS conflicts
- */
 const Molecule3DViewer = ({ molfile, smiles }) => {
+  const [viewMode, setViewMode] = useState('stick');
+  
   return (
-    <div style={{
-      marginTop: '24px',
-      marginBottom: '32px',
-      backgroundColor: 'white',
-      borderRadius: '12px',
-      overflow: 'hidden',
-      boxShadow: '0 4px 12px rgba(0,0,0,0.05)'
-    }}>
-      <div style={{
-        padding: '16px',
-        background: 'linear-gradient(135deg, #0061ab 0%, #6e4de1 100%)',
-        color: 'white'
-      }}>
-        <h3 style={{
-          fontSize: '1.125rem',
-          fontWeight: '500',
-          margin: '0',
-          display: 'flex',
-          alignItems: 'center'
-        }}>
-          3D Molecular Structure Viewer
-        </h3>
+    <div className="molecule-3d-viewer">
+      <div className="viewer-header">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="icon">
+          <path d="M12.378 1.602a.75.75 0 0 0-.756 0L3 6.632l9 5.25 9-5.25-8.622-5.03ZM21.75 7.93l-9 5.25v9l8.628-5.032a.75.75 0 0 0 .372-.648V7.93ZM11.25 22.18v-9l-9-5.25v8.57a.75.75 0 0 0 .372.648l8.628 5.033Z" />
+        </svg>
+        <h3>3D Molecular Structure Viewer</h3>
       </div>
       
-      <div style={{
-        padding: '24px',
-        textAlign: 'center'
-      }}>
-        <p style={{
-          color: '#4b5563',
-          marginBottom: '16px'
-        }}>
-          The 3D viewer feature is currently loading or unavailable.
+      <div className="viewer-content">
+        <p className="viewer-message">
+          The 3D viewer feature will display an interactive model of your molecule.
+          This feature is currently in development and will be available soon.
         </p>
         
-        <div style={{
-          backgroundColor: '#f8f9fa',
-          padding: '16px',
-          borderRadius: '8px',
-          display: 'inline-block',
-          fontFamily: 'monospace',
-          fontSize: '0.875rem',
-          color: '#374151'
-        }}>
-          SMILES: {smiles}
-        </div>
+        <div className="viewer-smiles">{smiles}</div>
         
-        <div style={{
-          display: 'flex',
-          justifyContent: 'center',
-          marginTop: '24px',
-          gap: '8px'
-        }}>
-          <button style={{
-            backgroundColor: 'white',
-            border: '1px solid #d1d5db',
-            borderRadius: '9999px',
-            padding: '8px 16px',
-            fontSize: '0.875rem',
-            cursor: 'pointer'
-          }}>
+        <div className="viewer-controls">
+          <button 
+            className={`view-option ${viewMode === 'stick' ? 'active' : ''}`}
+            onClick={() => setViewMode('stick')}
+          >
             Stick
           </button>
-          <button style={{
-            backgroundColor: 'white',
-            border: '1px solid #d1d5db',
-            borderRadius: '9999px',
-            padding: '8px 16px',
-            fontSize: '0.875rem',
-            cursor: 'pointer'
-          }}>
+          <button 
+            className={`view-option ${viewMode === 'ball-and-stick' ? 'active' : ''}`}
+            onClick={() => setViewMode('ball-and-stick')}
+          >
             Ball & Stick
           </button>
-          <button style={{
-            backgroundColor: 'white',
-            border: '1px solid #d1d5db',
-            borderRadius: '9999px',
-            padding: '8px 16px',
-            fontSize: '0.875rem',
-            cursor: 'pointer'
-          }}>
-            Surface
+          <button 
+            className={`view-option ${viewMode === 'space-filling' ? 'active' : ''}`}
+            onClick={() => setViewMode('space-filling')}
+          >
+            Space Filling
           </button>
         </div>
       </div>
