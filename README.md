@@ -41,8 +41,8 @@ There are multiple ways to deploy and run this application:
 
 1. Clone the repository
    ```bash
-   git clone https://github.com/yourusername/Test_CDK.git
-   cd Test_CDK
+   git clone https://github.com/yourusername/CDK-iwomi-demo.git
+   cd CDK-iwomi-demo
    ```
 
 2. Start the application with Docker Compose
