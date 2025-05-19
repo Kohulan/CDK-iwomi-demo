@@ -11,7 +11,10 @@ import HeroSection from './components/HeroSection';
 import Molecule3DViewer from './components/Molecule3DViewer';
 
 // Get backend URL from environment variable or use API proxy for local development
-const API_BASE_URL = process.env.REACT_APP_BACKEND_URL || '/api';
+// Make sure we always have the /api path
+const API_BASE_URL = process.env.REACT_APP_BACKEND_URL 
+  ? `${process.env.REACT_APP_BACKEND_URL}${process.env.REACT_APP_BACKEND_URL.endsWith('/api') ? '' : '/api'}`
+  : '/api';
 
 // Descriptor categories for grouping
 const DESCRIPTOR_CATEGORIES = {
@@ -54,10 +57,18 @@ function App() {
     const checkApiStatus = async () => {
       try {
         // Try to ping the backend API
-        await axios.get(`${API_BASE_URL}/molecules/health`, { timeout: 3000 });
+        console.log('Checking API health at:', `${API_BASE_URL}/molecules/health`);
+        await axios.get(`${API_BASE_URL}/molecules/health`, { 
+          timeout: 5000,
+          headers: {
+            'Cache-Control': 'no-cache'
+          } 
+        });
+        console.log('API health check successful!');
         setApiAvailable(true);
       } catch (err) {
         console.error('API health check failed:', err);
+        console.error('API URL used:', `${API_BASE_URL}/molecules/health`);
         setApiAvailable(false);
       }
     };

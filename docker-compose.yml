@@ -5,13 +5,15 @@ services:
     working_dir: /app
     ports:
       - "8080:8080"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     volumes:
       - ./backend/cdk-webapp-backend:/app
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080/api/molecules/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
+      interval: 60s
+      timeout: 5s
+      retries: 5
       start_period: 40s
     command: >
       sh -c "
@@ -29,6 +31,8 @@ services:
     working_dir: /app
     ports:
       - "3000:3000"
+    extra_hosts:
+      - "localhost:host-gateway"
     volumes:
       - ./frontend/cdk-webapp-frontend:/app
     command: >
@@ -40,7 +44,7 @@ services:
     environment:
       - CHOKIDAR_USEPOLLING=true
       - WDS_SOCKET_PORT=3000
-      - REACT_APP_BACKEND_URL=http://cdk-backend:8080
+      - REACT_APP_BACKEND_URL=http://localhost:8080
     depends_on:
       backend:
         condition: service_healthy
@@ -50,3 +54,4 @@ services:
 networks:
   cdk-network:
     driver: bridge
+    name: cdk-network

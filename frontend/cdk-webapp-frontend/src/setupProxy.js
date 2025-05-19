@@ -2,7 +2,7 @@ const { createProxyMiddleware } = require('http-proxy-middleware');
 
 module.exports = function(app) {
   // Get the backend URL from environment variables or use the default for local development
-  const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://127.0.0.1:8080';
+  const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:8080';
   
   console.log('Proxy setup - Using backend URL:', backendUrl);
   
